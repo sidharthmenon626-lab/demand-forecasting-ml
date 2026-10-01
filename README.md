@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
 [![Database](https://img.shields.io/badge/PostgreSQL-NeonDB-336791.svg)](https://neon.tech/)
 [![Framework](https://img.shields.io/badge/scikit--learn-Time--Series-F7931E.svg)](https://scikit-learn.org/)
-[![Status](https://img.shields.io/badge/Project_Status-Milestone_2_Complete-success.svg)](#milestone-2-findings-demand-exploration--problem-framing)
+[![Status](https://img.shields.io/badge/Project_Status-Milestone_3_Complete-success.svg)](#milestone-2-findings-demand-exploration--problem-framing)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > **Operations Objective:** Forecast weekly demand across product categories to optimize inventory replenishment, prevent costly stockouts, and minimize inventory holding costs across **40,000 orders** and **14 commercial categories**.
@@ -84,7 +84,7 @@ flowchart TD
 | :--- | :---: | :--- | :--- |
 | **Milestone 1** | **Completed** | **Project Setup & Repository Skeleton** | Clean repository skeleton, pinned dependencies ([`requirements.txt`](requirements.txt)), secure credential handling ([`.env.example`](.env.example)), and extraction pipeline ([`sql/extract_weekly_demand.sql`](sql/extract_weekly_demand.sql), [`src/extract.py`](src/extract.py)). |
 | **Milestone 2** | **Completed** | **Frame the Problem & Explore Demand** | Aggregate order history to weekly series; analyze category trend, volatility ($CV$), stationarity (ADF test), and the SKU intermittency dilemma ([`findings/01_problem_framing.md`](findings/01_problem_framing.md), [`notebooks/01_explore.ipynb`](notebooks/01_explore.ipynb)). |
-| **Milestone 3** | Queued | **Engineer Time-Series Features** | Construct lag features ($t-1, t-2, t-4$), rolling statistics (4-week and 12-week moving averages, standard deviation, min/max), and calendar signals strictly avoiding lookahead leakage ([`src/features.py`](src/features.py), [`notebooks/02_feature_engineering.ipynb`](notebooks/02_feature_engineering.ipynb)). |
+| **Milestone 3** | **Completed** | **Engineer Time-Series Features** | Construct lag features ($t-1, t-2, t-4$), rolling statistics (4-week and 12-week moving averages, standard deviation, min/max), and calendar signals strictly avoiding lookahead leakage ([`src/features.py`](src/features.py), [`notebooks/02_feature_engineering.ipynb`](notebooks/02_feature_engineering.ipynb)). |
 | **Milestone 4** | Queued | **Train, Evaluate & Compare Models** | Establish persistence and Seasonal Naive baselines; train Linear/Ridge, Random Forest, and Gradient Boosted Trees (XGBoost/LightGBM) using rolling-origin cross-validation (`TimeSeriesSplit`); evaluate on RMSE, MAE, and WMAPE ([`src/models.py`](src/models.py), [`src/evaluate.py`](src/evaluate.py), [`notebooks/03_model_training_evaluation.ipynb`](notebooks/03_model_training_evaluation.ipynb)). |
 | **Milestone 5** | Queued | **Production Thinking & Portfolio Polish** | Formulate an operational production deployment roadmap ([`findings/04_production_plan.md`](findings/04_production_plan.md)) specifying weekly Sunday cron inference, drift alert thresholds, and quarterly retraining; synthesize 3 quantified takeaways in an Executive Memo ([`findings/00_executive_summary.md`](findings/00_executive_summary.md)). |
 
@@ -112,6 +112,37 @@ flowchart TD
 *Detailed analysis and mathematical formulations are documented in [`findings/01_problem_framing.md`](findings/01_problem_framing.md) and [`notebooks/01_explore.ipynb`](notebooks/01_explore.ipynb).*
 
 ---
+
+
+## Milestone 3 Findings: Time-Series Feature Engineering & Temporal Hygiene
+
+> **Temporal Hygiene Invariant:**  
+> Every predictor engineered for week $ is computed strictly from observations $\\le W-1$. All rolling statistics enforce a group-level shift(1) before applying rolling windows, mathematically eliminating future lookahead leakage.
+
+| Feature Correlation Matrix | Temporal Hygiene Trailing Demonstration |
+| :---: | :---: |
+| [![Correlation Matrix](figures/05_feature_correlation_heatmap.png)](figures/05_feature_correlation_heatmap.png) | [![Trailing Features](figures/06_lag_and_rolling_features_example.png)](figures/06_lag_and_rolling_features_example.png) |
+
+### Feature Architecture & Audit Results:
+1. **Engineered Feature Groups (14 Total Predictors):**
+   * **Autoregressive Lags:** demand_lag_1 ( = 0.867$), demand_lag_2 ( = 0.760$), demand_lag_4 ( = 0.582$) capturing short-term momentum and 1-month replenishment anchors.
+   * **Rolling Window Statistics:** 
+olling_mean_2w, 
+olling_mean_4w, 
+olling_std_4w, 
+olling_min_4w, 
+olling_max_4w smoothing weekly variance and measuring local demand dispersion.
+   * **Momentum & Velocity:** demand_momentum_2w_4w ( - 4w$) detecting acceleration vs. decay, and demand_growth_ratio_1w_2w.
+   * **Calendar Signals:** month, week_of_year, and is_month_start_week capturing payday purchasing surges.
+2. **Automated Assertion Suite ([src/features.py](src/features.py)):**
+   * Confirmed across all 126 category-weeks that $\\text{demand\\_lag\\_1}_{c, W} \\equiv y_{c, W-1}$ (\\%$ match).
+   * Verified that 
+olling_mean_2w strictly excludes week $.
+   * Zero features exhibit artificial correlation ( < 0.999$), ruling out target duplication.
+3. **Baseline Model Sanity Check:** A simple Ridge regression on the feature matrix yielded an ^2$ of **0.784** ( = 18.2\\%$,  = 64.9\\text{ units}$), confirming solid, non-leaking predictive signal.
+
+*Full methodological details are documented in [indings/02_features.md](findings/02_features.md) and [
+otebooks/02_features.ipynb](notebooks/02_features.ipynb).*
 
 ## Data Pipeline & Database Architecture
 
