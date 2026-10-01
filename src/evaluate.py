@@ -111,3 +111,23 @@ def evaluate_time_series_cv(df: pd.DataFrame, models: dict, n_splits: int = 5):
         
     summary_df = pd.DataFrame(summary_rows).sort_values("Mean_WMAPE_pct")
     return summary_df, preds_df, folds_df
+
+
+if __name__ == '__main__':
+    import os
+    import sys
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+    from src.models import get_model_candidates as get_models
+    
+    features_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'processed', 'category_weekly_features.csv')
+    if not os.path.exists(features_path):
+        print(f'Features not found at {features_path}. Run src/features.py first.')
+    else:
+        df = pd.read_csv(features_path)
+        print('Loaded features:', df.shape)
+        print('Running 5-fold TimeSeriesSplit evaluation across baseline and ML estimators...')
+        models = get_models()
+        summary_df, _, _ = evaluate_time_series_cv(df, models, n_splits=5)
+        print()
+        print('=== Time-Series Cross-Validation Benchmark ===')
+        print(summary_df.to_string(index=False))
