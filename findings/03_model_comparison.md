@@ -3,7 +3,7 @@
 **Author:** Sidharth Menon  
 **Stakeholder:** Operations Director  
 **Context:** Model Selection & Cross-Validation Benchmarking  
-**Milestone:** 04 — Model Training & Evaluation  
+**Milestone:** 04  --  Model Training & Evaluation  
 
 ---
 
@@ -27,7 +27,7 @@ To establish trustworthy demand forecasts, we evaluated six candidate models usi
 ## 2. What the Baseline Does vs. What Machine Learning Adds
 
 ### The Last-Value Naive Baseline (The 24.71% Floor):
-The naive persistence baseline predicts $\\hat{y}_{c, W} = y_{c, W-1}$. In stable demand regimes, it captures the immediate level of the series without training overhead. However, when demand entered a prolonged post-promotional decay across May and June, persistence suffered from **systematic over-forecasting lag**—projecting stale peak volume into cooling weeks.
+The naive persistence baseline predicts $\\hat{y}_{c, W} = y_{c, W-1}$. In stable demand regimes, it captures the immediate level of the series without training overhead. However, when demand entered a prolonged post-promotional decay across May and June, persistence suffered from **systematic over-forecasting lag** -- projecting stale peak volume into cooling weeks.
 
 ### What the Robust ML Model Adds (+22.28% Lift):
 The **Huber Regressor** overcomes persistence lag by utilizing our engineered momentum features:
