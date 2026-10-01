@@ -15,7 +15,7 @@ def compute_wmape(y_true, y_pred) -> float:
     return (np.sum(np.abs(y_true - y_pred)) / denom) * 100.0
 
 
-def evaluate_time_series_cv(df: pd.DataFrame, models: dict, n_splits: int = 5):
+def evaluate_time_series_cv(df: pd.DataFrame, models: dict, n_splits: int = 5, feature_cols: list = None):
     """
     Evaluates models across temporal folds using expanding windows on calendar weeks.
     
@@ -38,7 +38,12 @@ def evaluate_time_series_cv(df: pd.DataFrame, models: dict, n_splits: int = 5):
     
     # Feature columns (exclude identifiers and target)
     meta_cols = ["week_start", "category_id", "category_name", "target"]
-    feature_cols = [c for c in df.columns if c not in meta_cols]
+    if feature_cols is None:
+        default_curated = ["demand_lag_1", "demand_lag_2", "demand_momentum_2w_4w", "rolling_mean_4w", "month"]
+        if all(c in df.columns for c in default_curated):
+            feature_cols = default_curated
+        else:
+            feature_cols = [c for c in df.columns if c not in meta_cols]
     
     all_fold_metrics = []
     all_preds = []

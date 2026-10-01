@@ -21,7 +21,7 @@
 
 ### Granularity: Weekly at Category Level (14 Categories)
 * **Weekly Aggregation:** Daily order volumes exhibit excessive intra-week noise (weekend vs. weekday traffic swings) irrelevant for wholesale procurement, which runs on weekly purchasing batches.
-* **Category Aggregation:** Across the 4,000 catalog SKUs, **38.6% of individual SKU-weeks have zero orders** (intermittent Poisson demand). Modeling individual SKUs on 13 weeks of history leads to severe overfitting. In contrast, all 14 product categories (*Skincare*, *Shoes*, *Accessories*, *Decor*, *Headphones*, etc.) maintain **100% active order continuity** across all 13 weeks (averaging 399 to 499 units/week), providing sufficient statistical density.
+* **Category Aggregation:** Across the 4,000 catalog SKUs, **38.5% of individual SKU-weeks have zero orders** (intermittent Poisson demand). Modeling individual SKUs on 13 weeks of history leads to severe overfitting. In contrast, all 14 product categories (*Skincare*, *Shoes*, *Accessories*, *Decor*, *Headphones*, etc.) maintain **100% active order continuity** across all 13 weeks (averaging 399 to 499 units/week), providing sufficient statistical density.
 
 ### Forecast Horizon: 1 to 4 Weeks Forward
 * **Procurement Lead Time:** Supplier lead times range from 7 to 21 days (1 to 3 weeks). A 1-to-4 week rolling horizon directly informs purchase orders before safety stocks breach, avoiding the unreliability of multi-month forecasts on short series.

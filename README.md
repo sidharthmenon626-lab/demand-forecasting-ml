@@ -39,14 +39,14 @@ flowchart TD
     subgraph Feature Engineering & Anti-Leakage
         D --> H["Leakage-Free Feature Store Engine"]
         H --> I["src/features.py (Lags t-1, t-2, t-4 & Rolling 4w/12w)"]
-        I --> J["notebooks/02_feature_engineering.ipynb"]
+        I --> J["notebooks/02_features.ipynb"]
     end
 
     subgraph Modeling & Time-Series Evaluation
         I --> K["Rolling-Origin CV (TimeSeriesSplit)"]
         K --> L["Baselines vs. Ridge vs. Random Forest vs. XGBoost"]
         L --> M["src/models.py & src/evaluate.py"]
-        M --> N["notebooks/03_model_training_evaluation.ipynb"]
+        M --> N["notebooks/03_models.ipynb"]
     end
 
     subgraph Production Operationalization
@@ -66,12 +66,12 @@ flowchart TD
 | **EDA Notebook** | [`notebooks/01_explore.ipynb`](notebooks/01_explore.ipynb) | Exploratory analysis of trend, volatility, stationarity, and sparsity | Verified clean top-to-bottom run with embedded analytical plots |
 | **Problem Brief** | [`findings/01_problem_framing.md`](findings/01_problem_framing.md) | Formal executive brief defining target, granularity, horizon, and metric | Justifies WMAPE over MAPE and resolves SKU sparsity dilemma |
 | **Feature Generator** | [`src/features.py`](src/features.py) | Modular feature pipeline constructing lag and rolling window features | Strict shift indexing preventing lookahead leakage |
-| **Feature Notebook** | [`notebooks/02_feature_engineering.ipynb`](notebooks/02_feature_engineering.ipynb) | Demonstrates feature extraction, correlation, and temporal splits | Enforces temporal boundary checks across validation folds |
+| **Feature Notebook** | [`notebooks/02_features.ipynb`](notebooks/02_features.ipynb) | Demonstrates feature extraction, correlation, and temporal splits | Enforces temporal boundary checks across validation folds |
 | **Model Estimators** | [`src/models.py`](src/models.py) | Persistence, Seasonal Naive, Ridge, Random Forest, and XGBoost models | Scikit-learn estimator interface with standardized API |
 | **Evaluation Engine** | [`src/evaluate.py`](src/evaluate.py) | Rolling-origin cross-validation (`TimeSeriesSplit`) and scoring | Calculates WMAPE, MAE, and RMSE strictly out-of-fold |
-| **Model Benchmark** | [`notebooks/03_model_training_evaluation.ipynb`](notebooks/03_model_training_evaluation.ipynb) | Model comparison, hyperparameter sweeps, and residual analysis | Simulates real-time weekly forward inference |
-| **Executive Memo** | [`findings/00_executive_summary.md`](findings/00_executive_summary.md) | High-level synthesis with 3 quantified operational takeaways | Written in clear executive language for the Operations Director |
-| **Production Plan** | [`findings/04_production_plan.md`](findings/04_production_plan.md) | Deployment architecture, weekly inference cadence, drift alerts, retraining | Establishes automated alert triggers (MAPE > 50%) and quarterly retraining |
+| **Model Benchmark** | [`notebooks/03_models.ipynb`](notebooks/03_models.ipynb) | Model comparison, hyperparameter sweeps, and residual analysis | Simulates real-time weekly forward inference |
+| **Executive Memo** | `findings/00_executive_summary.md` *(Queued)* | High-level synthesis with 3 quantified operational takeaways | Written in clear executive language for the Operations Director |
+| **Production Plan** | `findings/04_production_plan.md` *(Queued)* | Deployment architecture, weekly inference cadence, drift alerts, retraining | Establishes automated alert triggers (MAPE > 50%) and quarterly retraining |
 | **Environment Config**| [`.env.example`](.env.example) | Sanitized environment variable template for PostgreSQL connection | Prevents production database credentials from entering version control |
 | **Dependency Specs** | [`requirements.txt`](requirements.txt) | Pinned Python package dependencies for reproducible environments | Compatible with Python 3.11+ across Windows, macOS, and Linux |
 | **Git Rules** | [`.gitignore`](.gitignore) | Excludes credential files, python virtual environments, and raw data dumps | Ensures clean repository hygiene and zero data/secret leakage |
@@ -84,9 +84,9 @@ flowchart TD
 | :--- | :---: | :--- | :--- |
 | **Milestone 1** | **Completed** | **Project Setup & Repository Skeleton** | Clean repository skeleton, pinned dependencies ([`requirements.txt`](requirements.txt)), secure credential handling ([`.env.example`](.env.example)), and extraction pipeline ([`sql/extract_weekly_demand.sql`](sql/extract_weekly_demand.sql), [`src/extract.py`](src/extract.py)). |
 | **Milestone 2** | **Completed** | **Frame the Problem & Explore Demand** | Aggregate order history to weekly series; analyze category trend, volatility ($CV$), stationarity (ADF test), and the SKU intermittency dilemma ([`findings/01_problem_framing.md`](findings/01_problem_framing.md), [`notebooks/01_explore.ipynb`](notebooks/01_explore.ipynb)). |
-| **Milestone 3** | **Completed** | **Engineer Time-Series Features** | Construct lag features ($t-1, t-2, t-4$), rolling statistics (4-week and 12-week moving averages, standard deviation, min/max), and calendar signals strictly avoiding lookahead leakage ([`src/features.py`](src/features.py), [`notebooks/02_feature_engineering.ipynb`](notebooks/02_feature_engineering.ipynb)). |
-| **Milestone 4** | **Completed** | **Train, Evaluate & Compare Models** | Establish persistence and Seasonal Naive baselines; train Linear/Ridge, Random Forest, and Gradient Boosted Trees (XGBoost/LightGBM) using rolling-origin cross-validation (`TimeSeriesSplit`); evaluate on RMSE, MAE, and WMAPE ([`src/models.py`](src/models.py), [`src/evaluate.py`](src/evaluate.py), [`notebooks/03_model_training_evaluation.ipynb`](notebooks/03_model_training_evaluation.ipynb)). |
-| **Milestone 5** | Queued | **Production Thinking & Portfolio Polish** | Formulate an operational production deployment roadmap ([`findings/04_production_plan.md`](findings/04_production_plan.md)) specifying weekly Sunday cron inference, drift alert thresholds, and quarterly retraining; synthesize 3 quantified takeaways in an Executive Memo ([`findings/00_executive_summary.md`](findings/00_executive_summary.md)). |
+| **Milestone 3** | **Completed** | **Engineer Time-Series Features** | Construct lag features ($t-1, t-2, t-4$), rolling statistics (4-week and 12-week moving averages, standard deviation, min/max), and calendar signals strictly avoiding lookahead leakage ([`src/features.py`](src/features.py), [`notebooks/02_features.ipynb`](notebooks/02_features.ipynb)). |
+| **Milestone 4** | **Completed** | **Train, Evaluate & Compare Models** | Establish persistence and Seasonal Naive baselines; train Linear/Ridge, Random Forest, and Gradient Boosted Trees (XGBoost/LightGBM) using rolling-origin cross-validation (`TimeSeriesSplit`); evaluate on RMSE, MAE, and WMAPE ([`src/models.py`](src/models.py), [`src/evaluate.py`](src/evaluate.py), [`notebooks/03_models.ipynb`](notebooks/03_models.ipynb)). |
+| **Milestone 5** | Queued | **Production Thinking & Portfolio Polish** | Formulate an operational production deployment roadmap (`findings/04_production_plan.md` *(Queued)*) specifying weekly Sunday cron inference, drift alert thresholds, and quarterly retraining; synthesize 3 quantified takeaways in an Executive Memo (`findings/00_executive_summary.md` *(Queued)*). |
 
 ---
 
@@ -106,7 +106,7 @@ flowchart TD
 ### Key Empirical Takeaways:
 1. **Promotional Surge & Secular Decay:** Total weekly demand escalated from 9,214 units to a campaign peak of **11,134 units** in early April (+20.8%), followed by a persistent decay down to **2,551 units** in June (-77.1%).
 2. **Category Co-movement & Volatility:** Across all 14 active product categories (*Skincare*, *Shoes*, *Decor*, *Headphones*, etc.), the demand series co-moves synchronously. Coefficient of Variation ($CV = \sigma / \mu$) ranges narrowly between **0.413** and **0.477**, demonstrating predictable dispersion.
-3. **SKU Intermittency vs. Category Density:** Across 4,000 SKUs, **38.6% of individual SKU-weeks have zero orders**. Aggregating to category-level granularity resolves the intermittency dilemma, providing 100% active temporal continuity.
+3. **SKU Intermittency vs. Category Density:** Across 4,000 SKUs, **38.5% of individual SKU-weeks have zero orders**. Aggregating to category-level granularity resolves the intermittency dilemma, providing 100% active temporal continuity.
 4. **Statistical Non-Stationarity (ADF p = 0.887):** The overall demand series fails the Augmented Dickey-Fuller stationarity test ($t = -0.527, p > 0.05$), proving that differencing and autoregressive lag transformations ($t-1, t-2, t-4$) are essential for ML modeling.
 
 *Detailed analysis and mathematical formulations are documented in [`findings/01_problem_framing.md`](findings/01_problem_framing.md) and [`notebooks/01_explore.ipynb`](notebooks/01_explore.ipynb).*
