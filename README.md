@@ -74,7 +74,7 @@ flowchart TD
 | Component / Layer | Path | Operational Role | Anti-Leakage & Governance Safeguard |
 | :--- | :--- | :--- | :--- |
 | **Pipeline Query** | [`sql/extract_weekly_demand.sql`](sql/extract_weekly_demand.sql) | Aggregates transactional line items to weekly category and product volume | Filters strictly on finalized order states (`paid`, `delivered`, `shipped`) |
-| **Ingestion Engine** | [`src/extract.py`](src/extract.py) | Connects to NeonDB via environment variables; caches raw series | Reads [.env](.env) securely; outputs to git-ignored `data/raw/` |
+| **Ingestion Engine** | [`src/extract.py`](src/extract.py) | Connects to NeonDB via environment variables; caches raw series | Reads [`.env.example`](.env.example) securely; outputs to git-ignored `data/raw/` |
 | **EDA Notebook** | [`notebooks/01_explore.ipynb`](notebooks/01_explore.ipynb) | Exploratory analysis of trend, volatility, stationarity, and sparsity | Verified clean top-to-bottom run with embedded analytical plots |
 | **Problem Brief** | [`findings/01_problem_framing.md`](findings/01_problem_framing.md) | Formal executive brief defining target, granularity, horizon, and metric | Justifies WMAPE over MAPE and resolves SKU sparsity dilemma |
 | **Feature Generator** | [`src/features.py`](src/features.py) | Modular feature pipeline constructing lag and rolling window features | Strict shift indexing preventing lookahead leakage |
@@ -82,8 +82,8 @@ flowchart TD
 | **Model Estimators** | [`src/models.py`](src/models.py) | Persistence, Seasonal Naive, Ridge, Random Forest, and XGBoost models | Scikit-learn estimator interface with standardized API |
 | **Evaluation Engine** | [`src/evaluate.py`](src/evaluate.py) | Rolling-origin cross-validation (`TimeSeriesSplit`) and scoring | Calculates WMAPE, MAE, and RMSE strictly out-of-fold |
 | **Model Benchmark** | [`notebooks/03_models.ipynb`](notebooks/03_models.ipynb) | Model comparison, hyperparameter sweeps, and residual analysis | Simulates real-time weekly forward inference |
-| **Executive Memo** | `findings/00_executive_summary.md` *(Queued)* | High-level synthesis with 3 quantified operational takeaways | Written in clear executive language for the Operations Director |
-| **Production Plan** | `findings/04_production_plan.md` *(Queued)* | Deployment architecture, weekly inference cadence, drift alerts, retraining | Establishes automated alert triggers (MAPE > 50%) and quarterly retraining |
+| **Executive Memo** | [`findings/00_executive_summary.md`](findings/00_executive_summary.md) | High-level synthesis with 3 quantified operational takeaways | Written in clear executive language for the Operations Director |
+| **Production Plan** | [`findings/04_production_plan.md`](findings/04_production_plan.md) | Deployment architecture, weekly inference cadence, drift alerts, retraining | Establishes automated alert triggers (MAPE > 50%) and quarterly retraining |
 | **Environment Config**| [`.env.example`](.env.example) | Sanitized environment variable template for PostgreSQL connection | Prevents production database credentials from entering version control |
 | **Dependency Specs** | [`requirements.txt`](requirements.txt) | Pinned Python package dependencies for reproducible environments | Compatible with Python 3.11+ across Windows, macOS, and Linux |
 | **Git Rules** | [`.gitignore`](.gitignore) | Excludes credential files, python virtual environments, and raw data dumps | Ensures clean repository hygiene and zero data/secret leakage |
@@ -98,7 +98,7 @@ flowchart TD
 | **Milestone 2** | **Completed** | **Frame the Problem & Explore Demand** | Aggregate order history to weekly series; analyze category trend, volatility ($CV$), stationarity (ADF test), and the SKU intermittency dilemma ([`findings/01_problem_framing.md`](findings/01_problem_framing.md), [`notebooks/01_explore.ipynb`](notebooks/01_explore.ipynb)). |
 | **Milestone 3** | **Completed** | **Engineer Time-Series Features** | Construct lag features ($t-1, t-2, t-4$), rolling statistics (4-week and 12-week moving averages, standard deviation, min/max), and calendar signals strictly avoiding lookahead leakage ([`src/features.py`](src/features.py), [`notebooks/02_features.ipynb`](notebooks/02_features.ipynb)). |
 | **Milestone 4** | **Completed** | **Train, Evaluate & Compare Models** | Establish persistence and Seasonal Naive baselines; train Linear/Ridge, Random Forest, and Gradient Boosted Trees (XGBoost/LightGBM) using rolling-origin cross-validation (`TimeSeriesSplit`); evaluate on RMSE, MAE, and WMAPE ([`src/models.py`](src/models.py), [`src/evaluate.py`](src/evaluate.py), [`notebooks/03_models.ipynb`](notebooks/03_models.ipynb)). |
-| **Milestone 5** | Queued | **Production Thinking & Portfolio Polish** | Formulate an operational production deployment roadmap (`findings/04_production_plan.md` *(Queued)*) specifying weekly Sunday cron inference, drift alert thresholds, and quarterly retraining; synthesize 3 quantified takeaways in an Executive Memo (`findings/00_executive_summary.md` *(Queued)*). |
+| **Milestone 5** | **Completed** | **Production Thinking & Portfolio Polish** | Formulate an operational production deployment roadmap ([`findings/04_production_plan.md`](findings/04_production_plan.md)) specifying weekly Sunday cron inference, drift alert thresholds, and quarterly retraining; synthesize 3 quantified takeaways in an Executive Memo ([`findings/00_executive_summary.md`](findings/00_executive_summary.md)). |
 
 ---
 
@@ -139,22 +139,21 @@ flowchart TD
 1. **Engineered Feature Groups (14 Total Predictors):**
    * **Autoregressive Lags:** demand_lag_1 ( = 0.867$), demand_lag_2 ( = 0.760$), demand_lag_4 ( = 0.582$) capturing short-term momentum and 1-month replenishment anchors.
    * **Rolling Window Statistics:** 
-olling_mean_2w, 
-olling_mean_4w, 
-olling_std_4w, 
-olling_min_4w, 
-olling_max_4w smoothing weekly variance and measuring local demand dispersion.
+`rolling_mean_2w`, 
+`rolling_mean_4w`, 
+`rolling_std_4w`, 
+`rolling_min_4w`, 
+`rolling_max_4w` smoothing weekly variance and measuring local demand dispersion.
    * **Momentum & Velocity:** demand_momentum_2w_4w ( - 4w$) detecting acceleration vs. decay, and demand_growth_ratio_1w_2w.
    * **Calendar Signals:** month, week_of_year, and is_month_start_week capturing payday purchasing surges.
 2. **Automated Assertion Suite ([src/features.py](src/features.py)):**
    * Confirmed across all 126 category-weeks that $\\text{demand\\_lag\\_1}_{c, W} \\equiv y_{c, W-1}$ (\\%$ match).
    * Verified that 
-olling_mean_2w strictly excludes week $.
-   * Zero features exhibit artificial correlation ( < 0.999$), ruling out target duplication.
+`rolling_mean_2w` strictly excludes week $W$.
+   * Zero features exhibit artificial correlation ($r < 0.999$), ruling out target duplication.
 3. **Baseline Model Sanity Check:** A simple Ridge regression on the feature matrix yielded an ^2$ of **0.784** ( = 18.2\\%$,  = 64.9\\text{ units}$), confirming solid, non-leaking predictive signal.
 
-*Full methodological details are documented in [indings/02_features.md](findings/02_features.md) and [
-otebooks/02_features.ipynb](notebooks/02_features.ipynb).*
+*Full methodological details are documented in [`findings/02_features.md`](findings/02_features.md) and [`notebooks/02_features.ipynb`](notebooks/02_features.ipynb).*
 
 
 ## Milestone 4 Findings: Model Training, Rolling-Origin CV & Honest Evaluation
@@ -184,15 +183,14 @@ otebooks/02_features.ipynb](notebooks/02_features.ipynb).*
 2. **Why Tree Ensembles Struggled:** Decision trees partition feature space into orthogonal step-functions and predict training leaf averages. When demand declined into historical lows during June, tree models were unable to extrapolate below their lowest training leaf partitions, resulting in positive forecast bias.
 3. **Operational Failure Modes:** Residual errors are concentrated in high-volume, high-volatility discretionary lines (*Headphones*, *Shoes*, *Decor*,  \\approx 75-90\\text{ units}$), whereas staple categories (*Bedding*, *Kitchen*,  \\approx 50-60\\text{ units}$) exhibit tight bounds.
 
-*Complete benchmark results and mathematical formulations are documented in [indings/03_model_comparison.md](findings/03_model_comparison.md) and [
-otebooks/03_models.ipynb](notebooks/03_models.ipynb).*
+*Complete benchmark results and mathematical formulations are documented in [`findings/03_model_comparison.md`](findings/03_model_comparison.md) and [`notebooks/03_models.ipynb`](notebooks/03_models.ipynb).*
 
 ---
 
 ## Milestone 5 Findings: Operational Production Plan & Executive Memo
 
 > **Operational Deployment Strategy:**  
-> The production pipeline bridges offline analytical models with live procurement operations. Complete deployment specifications are detailed in [indings/04_production_plan.md](findings/04_production_plan.md) and executive recommendations in [indings/00_executive_summary.md](findings/00_executive_summary.md).
+> The production pipeline bridges offline analytical models with live procurement operations. Complete deployment specifications are detailed in [`findings/04_production_plan.md`](findings/04_production_plan.md) and executive recommendations in [`findings/00_executive_summary.md`](findings/00_executive_summary.md).
 
 ### Operational Cadence & Alert Thresholds:
 1. **Batch Cadence & SLA:** Runs every **Sunday at 23:00 UTC** via containerized Airflow batch jobs, writing to ecom.category_forecasts within a 30-minute SLA (by 23:30 UTC), ready for Category Buyers at Monday 08:00 AM.
@@ -252,7 +250,7 @@ DATABASE_URL=postgresql://<user>:<password>@<host>:5432/<database>?sslmode=requi
 ```
 
 ### 3. Run the End-to-End Audited Pipeline
-`ash
+```bash
 # Step 1: Extract weekly demand from NeonDB
 python src/extract.py
 
@@ -261,10 +259,10 @@ python src/features.py
 
 # Step 3: Run expanding-window time-series CV benchmark
 python src/evaluate.py
-`
+```
 
 ### 4. Interactive Jupyter Notebooks
-`ash
+```bash
 # Notebook 1: Exploratory Demand Analysis & Sparsity
 jupyter notebook notebooks/01_explore.ipynb
 
@@ -273,7 +271,7 @@ jupyter notebook notebooks/02_features.ipynb
 
 # Notebook 3: Model Training, Rolling-Origin CV & Evaluation
 jupyter notebook notebooks/03_models.ipynb
-`
+```
 
 ---
 
