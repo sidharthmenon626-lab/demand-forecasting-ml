@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
 [![Database](https://img.shields.io/badge/PostgreSQL-NeonDB-336791.svg)](https://neon.tech/)
 [![Framework](https://img.shields.io/badge/scikit--learn-Time--Series-F7931E.svg)](https://scikit-learn.org/)
-[![Status](https://img.shields.io/badge/Project_Status-Milestone_1_Complete-success.svg)]()
+[![Status](https://img.shields.io/badge/Project_Status-Milestone_2_Complete-success.svg)]()
 
 > **Operations Objective:** Forecast weekly demand across product categories to optimize inventory replenishment, prevent costly stockouts, and minimize inventory holding costs.
 
@@ -25,7 +25,7 @@ This project builds an end-to-end, leakage-free machine learning demand forecast
 | :--- | :---: | :--- | :--- |
 | **Milestone 1** | **Completed** | **Project Setup & Repository Skeleton** | Repository scaffolding, pinned dependencies (
 equirements.txt), secure credential handling (.env), SQL extraction pipeline (sql/extract_weekly_demand.sql, src/extract.py). |
-| **Milestone 2** | Queued | **Frame the Problem & Explore Demand** | Aggregate order history to weekly series; analyze category-level trend, seasonality, intermittent zero-order weeks, coefficient of variation ($), and stationarity tests (
+| **Milestone 2** | **Completed** | **Frame the Problem & Explore Demand** | Aggregate order history to weekly series; analyze category-level trend, seasonality, intermittent zero-order weeks, coefficient of variation ($), and stationarity tests (
 otebooks/01_eda_demand_exploration.ipynb). |
 | **Milestone 3** | Queued | **Engineer Time-Series Features** | Construct lag features (-1, t-2, t-4$), rolling statistics (4-week and 12-week moving averages, standard deviation, min/max), and calendar signals strictly avoiding lookahead leakage (src/features.py, 
 otebooks/02_feature_engineering.ipynb). |
@@ -65,6 +65,23 @@ demand-forecasting-ml/
 `
 
 ---
+
+
+## Milestone 2 Findings: Demand Exploration & Problem Framing
+
+> **Formal Problem Statement:**  
+> **Predict weekly units demanded** at the **product category level** for a **1-to-4 week forward horizon**, evaluated primarily by **WMAPE** (Weighted Mean Absolute Percentage Error) and benchmarked against **RMSE**.
+
+![Overall Weekly Demand Trend](figures/01_overall_weekly_demand.png)
+
+### Key Empirical Takeaways:
+1. **Promotional Surge & Secular Decay:** Total weekly demand escalated from 9,214 units to a campaign peak of **11,134 units** in early April, followed by a persistent decay down to **2,551 units** in June (-77.1%).
+2. **Category Co-movement & Volatility:** Across all 14 active product categories (*Skincare*, *Shoes*, *Decor*, *Headphones*, etc.), the demand series co-moves synchronously. Coefficient of Variation ( = \sigma / \mu$) ranges narrowly between **0.413** and **0.477**, demonstrating predictable dispersion.
+3. **SKU Intermittency vs. Category Density:** 38.6% of individual SKU-weeks have zero orders. Aggregating to category-level granularity resolves the intermittency dilemma, providing 100% active temporal continuity.
+4. **Non-Stationarity (ADF p = 0.887):** The overall demand series fails the Augmented Dickey-Fuller stationarity test ( > 0.05$), proving that differencing and autoregressive lag transformations (-1, t-2, t-4$) are essential for ML modeling.
+
+*Detailed analysis and mathematical formulations are documented in [indings/01_problem_framing.md](findings/01_problem_framing.md) and [
+otebooks/01_explore.ipynb](notebooks/01_explore.ipynb).*
 
 ## Data Pipeline & Database Architecture
 
