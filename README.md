@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
 [![Database](https://img.shields.io/badge/PostgreSQL-NeonDB-336791.svg)](https://neon.tech/)
 [![Framework](https://img.shields.io/badge/scikit--learn-Time--Series-F7931E.svg)](https://scikit-learn.org/)
-[![Status](https://img.shields.io/badge/Project_Status-Milestone_4_Complete-success.svg)](#milestone-2-findings-demand-exploration--problem-framing)
+[![Status](https://img.shields.io/badge/Project_Status-Production_Ready-success.svg)](#milestone-2-findings-demand-exploration--problem-framing)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > **Operations Objective:** Forecast weekly demand across product categories to optimize inventory replenishment, prevent costly stockouts, and minimize inventory holding costs across **40,000 orders** and **14 commercial categories**.
@@ -17,6 +17,18 @@ In high-growth e-commerce operations, inaccurate demand planning creates two sym
 2. **Over-Ordering on Low-Velocity SKUs:** Bloated working capital, increased warehouse storage fees, and eventual inventory markdowns or write-offs.
 
 This project implements an end-to-end, leakage-free machine learning demand forecasting pipeline built on transactional order data from **40,000 customer orders** across **14 active product categories** and **4,000 catalog products**.
+
+Using expanding-window time-series cross-validation (TimeSeriesSplit), our robust **Huber Regressor** achieves **19.20% WMAPE** and **60.77 RMSE** -- delivering an honest **+22.28% error reduction** over last-value persistence by actively damping projections during post-promotional demand decay.
+
+---
+
+## Prediction vs. Actual Performance (Out-of-Fold Horizon)
+
+The line chart below demonstrates the Huber Regressor generalization across out-of-fold cross-validation folds against actual customer demand and the Last-Value Naive baseline for two contrasting commercial profiles:
+
+[![Hero Prediction vs Actual](figures/11_hero_prediction_vs_actual.png)](figures/11_hero_prediction_vs_actual.png)
+
+*Figure 11: Out-of-fold generalization across high-volatility discretionary (Headphones) and predictable staple (Bedding) categories. The Huber Regressor dynamically damps over-projections during post-promotional decay.*
 
 ---
 
@@ -175,6 +187,33 @@ otebooks/02_features.ipynb](notebooks/02_features.ipynb).*
 *Complete benchmark results and mathematical formulations are documented in [indings/03_model_comparison.md](findings/03_model_comparison.md) and [
 otebooks/03_models.ipynb](notebooks/03_models.ipynb).*
 
+---
+
+## Milestone 5 Findings: Operational Production Plan & Executive Memo
+
+> **Operational Deployment Strategy:**  
+> The production pipeline bridges offline analytical models with live procurement operations. Complete deployment specifications are detailed in [indings/04_production_plan.md](findings/04_production_plan.md) and executive recommendations in [indings/00_executive_summary.md](findings/00_executive_summary.md).
+
+### Operational Cadence & Alert Thresholds:
+1. **Batch Cadence & SLA:** Runs every **Sunday at 23:00 UTC** via containerized Airflow batch jobs, writing to ecom.category_forecasts within a 30-minute SLA (by 23:30 UTC), ready for Category Buyers at Monday 08:00 AM.
+2. **Tiered Monitoring & Failover:**
+   * **P1 Critical Alert:** Trailing 2-week WMAPE > 40% or model underperforming naive triggers an on-call page and automated failover to Last-Value Naive baseline in the ERP queue.
+   * **P2 Warning Alert:** Single category WMAPE > 30% notifies buyer for buffer stock adjustment.
+   * **Feature Drift:** Automated Population Stability Index (PSI > 0.25) alerts on unexpected volume or momentum shifts.
+3. **Retraining & Promotion Policy:** Quarterly scheduled retraining (trailing 26 weeks) with a 4-week shadow soak comparison. New champion must achieve > 5% relative WMAPE reduction over incumbent.
+4. **Cold-Start & Promotion Handling:** New launches (< 4 weeks) map to parent department analog medians; planned marketing promotions dynamically adjust momentum damping.
+
+---
+
+## What I would Do Next (Operational Roadmap)
+
+If continuing this project in a live production enterprise environment, the next two analytical and architectural initiatives would be:
+
+1. **Hierarchical Forecast Reconciliation (Top-Down / MinT):** While category-level aggregation solved the 38.5% zero-demand intermittency dilemma for wholesale purchasing batches, warehouse fulfillment ultimately operates on individual SKU pick bins. I would implement **Minimum Trace (MinT) hierarchical reconciliation** to reconcile top-down category predictions down to bottom-up SKU levels, guaranteeing that individual SKU allocations sum coherently to the category procurement total while preserving SKU-level variance.
+2. **Exogenous Marketing & Promotional Calendar Features:** Currently, the model reacts to promotional surges and post-campaign drops with a 1-week momentum lag. Ingesting an upstream marketing campaign calendar (planned markdown percentages, email broadcast dates, paid acquisition budgets) as forward-looking exogenous regressor features would enable the model to anticipate demand surges *before* they materialize, further compressing peak-week error margins.
+
+---
+
 ## Data Pipeline & Database Architecture
 
 The source database is hosted on NeonDB (PostgreSQL) under the `ecom` schema:
@@ -212,18 +251,29 @@ Populate `DATABASE_URL` with your PostgreSQL credentials:
 DATABASE_URL=postgresql://<user>:<password>@<host>:5432/<database>?sslmode=require
 ```
 
-### 3. Extract Weekly Demand Data
-Execute the extraction pipeline via [`src/extract.py`](src/extract.py):
-```bash
+### 3. Run the End-to-End Audited Pipeline
+`ash
+# Step 1: Extract weekly demand from NeonDB
 python src/extract.py
-```
-This executes [`sql/extract_weekly_demand.sql`](sql/extract_weekly_demand.sql) and caches the extracted 31,938 aggregated records to `data/raw/weekly_demand.csv`.
 
-### 4. Run the Exploratory Notebook
-Launch Jupyter to explore the analysis:
-```bash
+# Step 2: Build leakage-free features and run automated audit suite
+python src/features.py
+
+# Step 3: Run expanding-window time-series CV benchmark
+python src/evaluate.py
+`
+
+### 4. Interactive Jupyter Notebooks
+`ash
+# Notebook 1: Exploratory Demand Analysis & Sparsity
 jupyter notebook notebooks/01_explore.ipynb
-```
+
+# Notebook 2: Leakage-Free Feature Engineering
+jupyter notebook notebooks/02_features.ipynb
+
+# Notebook 3: Model Training, Rolling-Origin CV & Evaluation
+jupyter notebook notebooks/03_models.ipynb
+`
 
 ---
 
