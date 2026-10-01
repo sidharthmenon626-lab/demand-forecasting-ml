@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
 [![Database](https://img.shields.io/badge/PostgreSQL-NeonDB-336791.svg)](https://neon.tech/)
 [![Framework](https://img.shields.io/badge/scikit--learn-Time--Series-F7931E.svg)](https://scikit-learn.org/)
-[![Status](https://img.shields.io/badge/Project_Status-Milestone_3_Complete-success.svg)](#milestone-2-findings-demand-exploration--problem-framing)
+[![Status](https://img.shields.io/badge/Project_Status-Milestone_4_Complete-success.svg)](#milestone-2-findings-demand-exploration--problem-framing)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > **Operations Objective:** Forecast weekly demand across product categories to optimize inventory replenishment, prevent costly stockouts, and minimize inventory holding costs across **40,000 orders** and **14 commercial categories**.
@@ -85,7 +85,7 @@ flowchart TD
 | **Milestone 1** | **Completed** | **Project Setup & Repository Skeleton** | Clean repository skeleton, pinned dependencies ([`requirements.txt`](requirements.txt)), secure credential handling ([`.env.example`](.env.example)), and extraction pipeline ([`sql/extract_weekly_demand.sql`](sql/extract_weekly_demand.sql), [`src/extract.py`](src/extract.py)). |
 | **Milestone 2** | **Completed** | **Frame the Problem & Explore Demand** | Aggregate order history to weekly series; analyze category trend, volatility ($CV$), stationarity (ADF test), and the SKU intermittency dilemma ([`findings/01_problem_framing.md`](findings/01_problem_framing.md), [`notebooks/01_explore.ipynb`](notebooks/01_explore.ipynb)). |
 | **Milestone 3** | **Completed** | **Engineer Time-Series Features** | Construct lag features ($t-1, t-2, t-4$), rolling statistics (4-week and 12-week moving averages, standard deviation, min/max), and calendar signals strictly avoiding lookahead leakage ([`src/features.py`](src/features.py), [`notebooks/02_feature_engineering.ipynb`](notebooks/02_feature_engineering.ipynb)). |
-| **Milestone 4** | Queued | **Train, Evaluate & Compare Models** | Establish persistence and Seasonal Naive baselines; train Linear/Ridge, Random Forest, and Gradient Boosted Trees (XGBoost/LightGBM) using rolling-origin cross-validation (`TimeSeriesSplit`); evaluate on RMSE, MAE, and WMAPE ([`src/models.py`](src/models.py), [`src/evaluate.py`](src/evaluate.py), [`notebooks/03_model_training_evaluation.ipynb`](notebooks/03_model_training_evaluation.ipynb)). |
+| **Milestone 4** | **Completed** | **Train, Evaluate & Compare Models** | Establish persistence and Seasonal Naive baselines; train Linear/Ridge, Random Forest, and Gradient Boosted Trees (XGBoost/LightGBM) using rolling-origin cross-validation (`TimeSeriesSplit`); evaluate on RMSE, MAE, and WMAPE ([`src/models.py`](src/models.py), [`src/evaluate.py`](src/evaluate.py), [`notebooks/03_model_training_evaluation.ipynb`](notebooks/03_model_training_evaluation.ipynb)). |
 | **Milestone 5** | Queued | **Production Thinking & Portfolio Polish** | Formulate an operational production deployment roadmap ([`findings/04_production_plan.md`](findings/04_production_plan.md)) specifying weekly Sunday cron inference, drift alert thresholds, and quarterly retraining; synthesize 3 quantified takeaways in an Executive Memo ([`findings/00_executive_summary.md`](findings/00_executive_summary.md)). |
 
 ---
@@ -143,6 +143,37 @@ olling_mean_2w strictly excludes week $.
 
 *Full methodological details are documented in [indings/02_features.md](findings/02_features.md) and [
 otebooks/02_features.ipynb](notebooks/02_features.ipynb).*
+
+
+## Milestone 4 Findings: Model Training, Rolling-Origin CV & Honest Evaluation
+
+> **The Honest Benchmark:**  
+> Evaluated six candidate models across an expanding-window TimeSeriesSplit (5 temporal folds) strictly out-of-fold. The **Huber Regressor (Robust ML)** outperformed the Last-Value Naive baseline by **+22.28% on WMAPE** and **+15.46% on RMSE**.
+
+| Model Cross-Validation Benchmark | Out-of-Fold Actual vs. Predicted Trajectory |
+| :---: | :---: |
+| [![Model Benchmark](figures/07_model_cv_benchmark.png)](figures/07_model_cv_benchmark.png) | [![Trajectory Comparison](figures/09_actual_vs_predicted_time_series.png)](figures/09_actual_vs_predicted_time_series.png) |
+| **Feature Coefficients & Impact** | **Category Residual Error Breakdown** |
+| [![Feature Importance](figures/08_feature_importance.png)](figures/08_feature_importance.png) | [![Category Errors](figures/10_category_error_distribution.png)](figures/10_category_error_distribution.png) |
+
+### Audited Model Benchmark Summary:
+
+| Model Architecture | Mean WMAPE | Std WMAPE | Mean RMSE | Std RMSE | Mean MAE | WMAPE Lift vs. Naive | RMSE Lift vs. Naive |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Huber Regressor (Robust ML)** | **19.20%** | $\\pm 13.99\\%$ | **60.77** | $\\pm 48.54$ | **55.58** | **+22.28%** | **+15.46%** |
+| **Last-Value Naive (Floor)** | **24.71%** | $\\pm 10.57\\%$ | **71.88** | $\\pm 18.76$ | **65.09** | Baseline (.0\\%$) | Baseline (.0\\%$) |
+| **Ridge Regressor** | **25.13%** | $\\pm 14.51\\%$ | **72.94** | $\\pm 42.67$ | **68.04** | $-1.70\\%$ | $-1.48\\%$ |
+| **Random Forest (depth=3)** | **26.96%** | $\\pm 14.96\\%$ | **74.96** | $\\pm 28.43$ | **69.30** | $-9.10\\%$ | $-4.29\\%$ |
+| **XGBoost (depth=2)** | **33.27%** | $\\pm 23.89\\%$ | **84.89** | $\\pm 37.62$ | **79.69** | $-34.67\\%$ | $-18.10\\%$ |
+| **4-Week Moving Average** | **34.55%** | $\\pm 26.30\\%$ | **85.89** | $\\pm 50.69$ | **82.78** | $-39.82\\%$ | $-19.49\\%$ |
+
+### Key Diagnostic Takeaways:
+1. **The Naive Floor vs. Trend Adaptation:** Last-Value Naive establishes an operational baseline at **24.71% WMAPE**. However, during the post-promotional demand decay across May and June, persistence chronically over-forecasts. The Huber Regressor leverages demand_momentum_2w_4w and demand_lag_1 to dynamically scale down predictions during cooling regimes.
+2. **Why Tree Ensembles Struggled:** Decision trees partition feature space into orthogonal step-functions and predict training leaf averages. When demand declined into historical lows during June, tree models were unable to extrapolate below their lowest training leaf partitions, resulting in positive forecast bias.
+3. **Operational Failure Modes:** Residual errors are concentrated in high-volume, high-volatility discretionary lines (*Headphones*, *Shoes*, *Decor*,  \\approx 75-90\\text{ units}$), whereas staple categories (*Bedding*, *Kitchen*,  \\approx 50-60\\text{ units}$) exhibit tight bounds.
+
+*Complete benchmark results and mathematical formulations are documented in [indings/03_model_comparison.md](findings/03_model_comparison.md) and [
+otebooks/03_models.ipynb](notebooks/03_models.ipynb).*
 
 ## Data Pipeline & Database Architecture
 
