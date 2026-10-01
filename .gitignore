@@ -1,0 +1,36 @@
+﻿# Environment variables & secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# Data directories (keep structure, ignore large csv/parquet)
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# Operating System
+.DS_Store
+Thumbs.db
+
+# IDE & Editors
+.vscode/
+.idea/
